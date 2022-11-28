@@ -9,7 +9,7 @@
 using namespace std;
 
 void forward_selection(vector<vector<float>>, int);
-void backward_elimination();
+void backward_elimination(vector<vector<float>>, int);
 float LOO_cross_validation();
 pair<set<int>, float> find_max_accuracy(vector<pair<set<int>, float>>);
 
@@ -52,7 +52,8 @@ int main () {
     numCols = data.at(0).size();
     cout << "This dataset has " << numCols - 1 << " features (not including the class attribute), with " << numRows << " instances." << endl;
     
-    forward_selection(data, numCols - 1);
+    // forward_selection(data, numCols - 1);
+    backward_elimination(data, numCols - 1);
     // cout << "Type the number of the algorithm you want to run:" << endl;
     // cout << "\t1) Forward Selection" << endl;
     // cout << "\t2) Backward Elimintation" << endl;
@@ -130,7 +131,77 @@ void forward_selection(vector<vector<float>> data, int numFeatures) {
     }
 }
 
-void backward_elimination() {
+void backward_elimination(vector<vector<float>> data, int numFeatures) {
+    set<int> added_feature;
+    pair<set<int>, float> feature_set;
+    vector<pair<set<int>, float>> possible_sets;
+
+    set<int> best_features = {};
+    vector<pair<set<int>, float>> best_sets;
+    for (int i = 1; i <= numFeatures; ++i) {
+        best_features.insert(i);
+    }
+    feature_set = make_pair(best_features, LOO_cross_validation());
+    possible_sets.push_back(feature_set);
+
+    pair<set<int>, float> best_feature_to_add = find_max_accuracy(possible_sets);
+    cout << "Feature set {";
+    set<int>::iterator itr;
+    for (itr = best_feature_to_add.first.begin(); itr != best_feature_to_add.first.end(); itr++) {
+        if (itr != best_feature_to_add.first.begin()) {
+            cout << ",";
+        }
+        cout << *itr;
+    }
+    cout << "} was best, accuracy is " << best_feature_to_add.second << "%" << endl;
+    possible_sets.clear();
+    best_sets.push_back(feature_set);
+
+    for (int i = 1; i < numFeatures; ++i) {
+        cout << "On level " << i << " of the search tree" << endl;
+        for (int j = 1; j <= numFeatures; ++j) {
+            added_feature = best_features;
+            if (added_feature.count(j)) {
+                cout << "--Consider removing feature " << j << endl;
+                added_feature.erase(j);
+                feature_set = make_pair(added_feature, LOO_cross_validation());
+                possible_sets.push_back(feature_set);
+            }
+        }
+    
+        for (int i = 0; i < possible_sets.size(); ++i) {
+            set<int> it = possible_sets.at(i).first;
+            for (auto& str: it) {
+                cout << str << " ";
+            }
+            cout << possible_sets.at(i).second << endl;
+        }
+
+        pair<set<int>, float> best_feature_to_add = find_max_accuracy(possible_sets);
+        cout << "Feature set {";
+        for (itr = best_feature_to_add.first.begin(); itr != best_feature_to_add.first.end(); itr++) {
+            if (itr != best_feature_to_add.first.begin()) {
+                cout << ",";
+            }
+            cout << *itr;
+        }
+        cout << "} was best, accuracy is " << best_feature_to_add.second << "%" << endl;
+
+        best_sets.push_back(best_feature_to_add);
+        best_features = best_feature_to_add.first;
+        possible_sets.clear();
+    }
+
+    cout << endl << "best features in sequence" << endl;
+    for (int i = 0; i < best_sets.size(); ++i) {
+        for (itr = best_sets.at(i).first.begin(); itr != best_sets.at(i).first.end(); itr++) {
+            if (itr != best_sets.at(i).first.begin()) {
+                cout << ",";
+            }
+            cout << *itr;
+        }
+        cout << " " << best_sets.at(i).second << endl;
+    }
 
 }
 
